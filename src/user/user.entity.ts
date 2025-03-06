@@ -2,7 +2,7 @@ import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
 import { Watch } from 'src/watches/watch.entity';
 
 @Entity('users') // Ensure the table name is 'users'
-export class User {
+export class Users {
   @PrimaryGeneratedColumn()
   id: number;
 

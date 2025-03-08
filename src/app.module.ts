@@ -16,7 +16,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
       database: process.env.DATABASE_NAME,
       autoLoadEntities: true,
       synchronize: true,
-      ssl: false, // Explicitly set to false
+      ssl: false, // Explicitly set
       logging: true,
       // Remove SSL-related extra
       extra: {

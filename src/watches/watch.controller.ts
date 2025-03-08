@@ -12,9 +12,9 @@ export class WatchController {
 
   @Post('login')
   async login(@Body() body: { username: string; password: string }) {
-    const watch = await this.watchService.login(body.username, body.password);
-    if (watch) {
-      return { message: 'Login successful', watch };
+    const result = await this.watchService.login(body.username, body.password);
+    if (result) {
+      return { message: 'Login successful', watch: result.watch, userId: result.userId };
     }
     return { message: 'Invalid credentials' };
   }

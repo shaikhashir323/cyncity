@@ -33,5 +33,9 @@ export class UserService {
       return bcrypt.compare(password, user.password);
     }
     return false;
+    
+  }
+  async findAll(): Promise<Users[]> {
+    return this.userRepository.find(); // Fetch all users
   }
 }

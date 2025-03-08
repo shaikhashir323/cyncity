@@ -26,10 +26,14 @@ export class WatchService {
     return this.watchRepository.save(watch);
   }
 
-  async login(username: string, password: string): Promise<Watch | null> {
-    const watch = await this.watchRepository.findOne({ where: { username } });
+  async login(username: string, password: string): Promise<{ watch: Watch; userId: number } | null> {
+    const watch = await this.watchRepository.findOne({ 
+      where: { username },
+      relations: ['user'], // Ensure the user relation is loaded
+    });
+
     if (watch && await bcrypt.compare(password, watch.password)) {
-      return watch; // Return the watch if login is successful
+      return { watch, userId: watch.user.id }; // Return the watch and userId if login is successful
     }
     return null; // Return null if login fails
   }

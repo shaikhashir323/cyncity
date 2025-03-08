@@ -18,7 +18,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
       synchronize: true,
       ssl: false, // Explicitly set to false
       logging: true,
-      // Remove SSL-related extra options
+      // Remove SSL-related extra
       extra: {
         connectionLimit: 10,
       },

@@ -1,12 +1,17 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { HttpModule } from '@nestjs/axios'; // Import HttpModule
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
-import { ConfigModule } from '@nestjs/config';
-import { WatchModule } from './watches/watch.module'; // Ensure this import is correct
+import { WatchModule } from './watches/watch.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { OpenAIService } from './openai/openai.service';
+import { CommunicationController } from './communication/communication.controller';
+
 @Module({
   imports: [
-    ConfigModule.forRoot(), // Add this to load .env files
+    ConfigModule.forRoot({ isGlobal: true }), // Load environment variables globally
+    HttpModule, // Import HttpModule globally
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST,
@@ -16,9 +21,8 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
       database: process.env.DATABASE_NAME,
       autoLoadEntities: true,
       synchronize: true,
-      ssl: false, // Explicitly set
+      ssl: false,
       logging: true,
-      // Remove SSL-related extra
       extra: {
         connectionLimit: 10,
       },
@@ -27,5 +31,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
     WatchModule,
     WhatsappModule,
   ],
+  providers: [OpenAIService], // Provide OpenAIService
+  controllers: [CommunicationController],
 })
 export class AppModule {}

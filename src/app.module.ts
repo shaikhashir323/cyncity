@@ -7,6 +7,7 @@ import { WatchModule } from './watches/watch.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { OpenAIService } from './openai/openai.service';
 import { CommunicationController } from './communication/communication.controller';
+import { AuthController } from './auth/auth.controller';
 
 @Module({
   imports: [
@@ -32,6 +33,6 @@ import { CommunicationController } from './communication/communication.controlle
     WhatsappModule,
   ],
   providers: [OpenAIService], // Provide OpenAIService
-  controllers: [CommunicationController],
+  controllers: [CommunicationController, AuthController],
 })
 export class AppModule {}

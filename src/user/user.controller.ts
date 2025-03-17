@@ -6,6 +6,7 @@ import { Users } from './user.entity';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  
   @Post('register')
   async register(@Body() body: { email: string; password: string }) {
     return this.userService.register(body.email, body.password);
@@ -24,8 +25,14 @@ export class UserController {
     return { message: 'Invalid credentials' };
   }
 
+  @Post('apple')
+  async appleSignIn(@Body() body: { appleUserId: string, email: string }) {
+    return this.userService.registerWithApple(body.appleUserId, body.email);
+  }
+
   @Get('users') // New endpoint to get all users
   async getAllUsers(): Promise<Users[]> {
     return this.userService.findAll();
   }
+  
 }

@@ -9,8 +9,17 @@ export class Users {
   @Column({ unique: true })
   email: string;
 
-  @Column()
-  password: string;
+  @Column({ nullable: true }) // Make password nullable
+  password: string | null;
+
+  @Column({ default: false })
+  isVerified: boolean;
+
+  @Column({ type: 'text', nullable: true })
+  verificationToken: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  accessToken: string | null;
 
   @OneToMany(() => Watch, watch => watch.user) // Establish the relationship
   watches: Watch[]; // This will hold the references to the Watch entities

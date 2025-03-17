@@ -153,6 +153,43 @@ Response:{
   }
 ]
 
-Description:
+Apple Sign-In Api
+URL: https://cyncity-production-75a3.up.railway.app/auth/apple
+Method: POST
+Content-Type: application/json
+Request Body:
+{
+  "appleUserId": "string", // The unique identifier for the Apple user (token)
+  "email": "string"        // The email address of the user
+}
+Response:
+{
+  "message": "User logged in successfully with Apple.",
+  "user": {
+    "id": 8,
+    "email": "developers@qfnetwork.org",
+    "isVerified": true,
+    "accessToken": "000038.0e051e8b214e45cab5c5022f8ab79f10.1023"
+  }
+}
+If the user is registered successfully, the response will be:
+{
+  "message": "User registered successfully with Apple.",
+  "user": {
+    "id": 9,
+    "email": "newuser@example.com",
+    "isVerified": true,
+    "accessToken": "000038.0e051e8b214e45cab5c5022f8ab79f10.1023"
+  }
+}
+
+Error Response:
+{
+  "message": "User does not exist"
+}
+
+
+
+
 
 Retrieves a list of all registered watches, including their associated userId.

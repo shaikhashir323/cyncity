@@ -103,10 +103,8 @@ export class CommunicationController {
         console.log('AI Response:', aiResponse);
   
         // Send response back via WhatsApp
-        return this.whatsappService.sendMessage(senderId, 'generic_response', [
-          aiResponse,
-          'Extra Placeholder Value',
-        ]);
+        return this.whatsappService.sendMessage(senderId, 'generic_response', [aiResponse, '']);
+
       }
     }
   

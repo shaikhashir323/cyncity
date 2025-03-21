@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
 import { HealthData } from '../types/health-data'; // Import the shared type
@@ -6,16 +7,26 @@ import { HealthData } from '../types/health-data'; // Import the shared type
 @Injectable()
 export class PineconeService {
   private pinecone: Pinecone;
-  private indexName = process.env.PINECONE_INDEX_NAME;
-  private openai;
+  private indexName: string;
+  private openai: OpenAI;
 
-  constructor() {
-    this.pinecone = new Pinecone({
-      apiKey: process.env.PINECONE_API_KEY,
-    });
-    this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    } as any);
+  constructor(private configService: ConfigService) {
+    const pineconeApiKey = this.configService.get<string>('PINECONE_API_KEY');
+    const openAiApiKey = this.configService.get<string>('OPENAI_API_KEY');
+    this.indexName = this.configService.get<string>('PINECONE_INDEX_NAME');
+
+    if (!pineconeApiKey) {
+      throw new Error('Missing PINECONE_API_KEY in environment variables');
+    }
+    if (!openAiApiKey) {
+      throw new Error('Missing OPENAI_API_KEY in environment variables');
+    }
+    if (!this.indexName) {
+      throw new Error('Missing PINECONE_INDEX_NAME in environment variables');
+    }
+
+    this.pinecone = new Pinecone({ apiKey: pineconeApiKey });
+    this.openai = new OpenAI({ apiKey: openAiApiKey } as any);
   }
 
   async generateEmbedding(text: string): Promise<number[]> {
@@ -85,7 +96,6 @@ export class PineconeService {
     const vector = result.records[vectorId];
 
     if (vector && vector.metadata?.healthData) {
-      // Ensure healthData is a string before parsing
       const healthDataString = String(vector.metadata.healthData);
       return JSON.parse(healthDataString) as HealthData;
     }

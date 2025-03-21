@@ -188,8 +188,52 @@ Error Response:
   "message": "User does not exist"
 }
 
+1. Store Health Data
+Endpoint: POST /communication/store-health-data
+Description: Stores the user's health data in Pinecone.
 
+Headers:
+{
+  "Content-Type": "application/json"
+}
+Request Body:
+{
+  "userId": eg: "923368272591",
+  "healthData": {
+    "stepCount": 50,
+    "heartRate": 71,
+    "activeCalories": 300,
+    "bloodOxygen": 98,
+    "sleepHours": 7.5,
+    "distance": 3.2,
+    "restingHeartRate": 62,
+    "floorsClimbed": 5
+  }
+}
+Response:
+{
+  "status": "success",
+  "message": "Health data stored successfully"
+}
 
+2. Get Health Data
+Endpoint: GET /communication/get-health-data
+Description: Retrieves the user's latest health data from Pinecone.
 
+Request Parameters:
+userId (required): The ID of the user
 
-Retrieves a list of all registered watches, including their associated userId.
+Response:
+{
+  "status": "success",
+  "data": {
+    "stepCount": 10000,
+    "heartRate": 72,
+    "activeCalories": 2500,
+    "bloodOxygen": 98,
+    "sleepHours": 8,
+    "distance": 10,
+    "restingHeartRate": 68,
+    "floorsClimbed": 10
+  }
+}

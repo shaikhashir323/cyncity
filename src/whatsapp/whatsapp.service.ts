@@ -16,7 +16,9 @@ export class WhatsappService {
     this.accessToken = this.configService.get<string>('WHATSAPP_ACCESS_TOKEN');
   }
 
-  async sendMessage(to: string, templateName: string, parameters: string[] = []): Promise<any> {
+  async sendMessage(to: string, templateName: string, parameters: string[] = []) {
+    console.log({ parameters });
+
     const payload = {
       messaging_product: 'whatsapp',
       to,
@@ -24,16 +26,18 @@ export class WhatsappService {
       template: {
         name: templateName,
         language: { code: 'en_US' },
-        components: parameters.length
-          ? [
-              {
-                type: 'body',
-                parameters: parameters.map((param) => ({ type: 'text', text: param })),
-              },
-            ]
-          : [],
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              { type: 'text', text: parameters[0] || 'Default Value 1' }, // First parameter
+              { type: 'text', text: parameters[1] || 'Default Value 2' }, // Second parameter
+            ],
+          },
+        ],
       },
     };
+    
 
     try {
       const response = await firstValueFrom(

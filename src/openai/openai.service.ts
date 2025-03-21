@@ -16,14 +16,19 @@ export class OpenAIService {
 
   async generateResponse(prompt: string): Promise<string> {
     const payload = {
-      model: 'gpt-3.5-turbo', // Use the Chat Completions model
+      model: 'gpt-3.5-turbo', // Keep your existing model
       messages: [
+        {
+          role: 'system',
+          content: 'You are a friendly chatbot with memory. Use the conversation history provided in the prompt to answer questions or infer details like the user’s name if mentioned earlier. If no relevant history is provided, respond naturally based on the current input.',
+        },
         {
           role: 'user',
           content: prompt,
         },
       ],
       max_tokens: 150,
+      temperature: 0.7, // Optional: Adjust for creativity vs. precision
     };
 
     try {

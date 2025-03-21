@@ -8,6 +8,7 @@ import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { OpenAIService } from './openai/openai.service';
 import { CommunicationController } from './communication/communication.controller';
 import { AuthController } from './auth/auth.controller';
+import { PineconeService } from './pinecone/pinecone.service'; // Import PineconeService
 
 @Module({
   imports: [
@@ -32,7 +33,7 @@ import { AuthController } from './auth/auth.controller';
     WatchModule,
     WhatsappModule,
   ],
-  providers: [OpenAIService], // Provide OpenAIService
+  providers: [OpenAIService, PineconeService], // Provide OpenAIService
   controllers: [CommunicationController, AuthController],
 })
 export class AppModule {}

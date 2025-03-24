@@ -29,17 +29,11 @@ export class WhatsappService {
         components: [
           {
             type: 'body',
-            parameters: [
-              { type: 'text', text: parameters[0] || 'Default Value 1' }, // First parameter
-              { type: 'text', text: parameters[1] || 'Default Value 2' }, // Second parameter
-              { type: 'text', text: parameters[2] || 'Default Value 3' }, // Third parameter
-              { type: 'text', text: parameters[3] || 'Default Value 4' }, // Fourth parameter
-            ],
+            parameters: parameters.map(param => ({ type: 'text', text: param || '' })),
           },
         ],
       },
     };
-    
 
     try {
       const response = await firstValueFrom(

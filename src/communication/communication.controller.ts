@@ -55,7 +55,6 @@ export class CommunicationController {
           .filter(match => match.id.startsWith(`chat:${senderId}:`) && match.metadata && match.metadata.text)
           .sort((a, b) => String(b.metadata.timestamp || '').localeCompare(String(a.metadata.timestamp || '')))
           .slice(0, 5);
-          
   
         const conversationHistory = senderHistory
           .map(match => {
@@ -65,22 +64,28 @@ export class CommunicationController {
           })
           .join('\n');
   
-        // Fetch the latest health data from Pinecone
+        // Fetch the latest health data
         const healthData = await this.pineconeService.getLatestHealthData(senderId);
   
-        // Format health data dynamically
+        // Format health data for the prompt
         let healthDataString = '';
         if (healthData) {
-          healthDataString = 'User\'s Latest Health Data:\n';
+          healthDataString = 'Latest Data for Giovanni:\n';
           for (const [key, value] of Object.entries(healthData)) {
             healthDataString += `- ${key}: ${value}\n`;
           }
         } else {
-          healthDataString = 'No health data available for the user.';
+          healthDataString = 'No data available for Giovanni.';
         }
   
-        // Construct the prompt with health data and instructions
+        // Hardcode relationship context (replace with dynamic fetching in a real app)
+        const relationshipContext = `You are assisting Marta Rossi, who is the mother of Giovanni Rossi, the person with the device.`;
+  
+        // Construct the prompt for OpenAI
         const fullPrompt = `
+  Relationship Context:
+  ${relationshipContext}
+  
   Conversation History:
   ${conversationHistory || 'No prior conversation found.'}
   
@@ -88,9 +93,15 @@ export class CommunicationController {
   ${healthDataString}
   
   Instructions:
-  - Use the conversation history to maintain context.
-  - Use the health data only if the user asks about their health or if it’s relevant to their query.
-  - If the user asks about a specific health metric not listed, inform them that the information is not available.
+  - You are an AI assistant named Al, helping family members of individuals with devices.
+  - Always personalize responses with the user’s name (e.g., "Hi Marta") and their relationship (e.g., "Giovanni, your son").
+  - Be empathetic, concise, and proactive. For example:
+    - If asked about location, respond like: "Hi Marta, of course! Giovanni is at [location]. Would you like me to update you if he moves?"
+    - If asked about health, respond like: "At the moment, Giovanni’s vital parameters are normal: heart rate is [value] bpm, and oxygen saturation is [value]%. Would you like notifications if anything changes?"
+    - If asked about issues or external actions (e.g., bus delays), respond like: "I understand the issue. I’ll report it to [relevant party] and keep you updated."
+  - Use the latest data (e.g., location, health metrics) only if relevant to the query or if the user asks.
+  - If information is unavailable, say so politely and offer help (e.g., "There are no reports of any problems. Would you like me to check with him?").
+  - End most responses with a friendly offer, like: "It’s my pleasure to assist, Marta! Feel free to reach out if you need anything else."
   
   Current Message:
   User: ${userQuery}
@@ -103,8 +114,7 @@ export class CommunicationController {
         console.log('AI Response:', aiResponse);
   
         // Send response back via WhatsApp
-        return this.whatsappService.sendMessage(senderId, 'card_transaction_alert_2 ', [aiResponse, '']);
-
+        return this.whatsappService.sendMessage(senderId, 'ai_response', [aiResponse]);
       }
     }
   

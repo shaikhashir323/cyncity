@@ -18,9 +18,6 @@ export class Users {
   @Column({ type: 'text', nullable: true })
   verificationToken: string | null;
 
-  @Column({ type: 'text', nullable: true })
-  accessToken: string | null;
-
-  @OneToMany(() => Watch, watch => watch.user) // Establish the relationship
+  @OneToMany(() => Watch, (watch) => watch.user) // Establish the relationship
   watches: Watch[]; // This will hold the references to the Watch entities
 }

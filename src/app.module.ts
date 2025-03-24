@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { HttpModule } from '@nestjs/axios'; // Import HttpModule
+import { HttpModule } from '@nestjs/axios';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { WatchModule } from './watches/watch.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
+import { AuthModule } from './auth/auth.module'; // ✅ Import AuthModule
 import { OpenAIService } from './openai/openai.service';
 import { CommunicationController } from './communication/communication.controller';
-import { AuthController } from './auth/auth.controller';
-import { PineconeService } from './pinecone/pinecone.service'; // Import PineconeService
+import { PineconeService } from './pinecone/pinecone.service';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }), // Load environment variables globally
-    HttpModule, // Import HttpModule globally
+    ConfigModule.forRoot({ isGlobal: true }),
+    HttpModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DATABASE_HOST,
@@ -32,8 +32,9 @@ import { PineconeService } from './pinecone/pinecone.service'; // Import Pinecon
     UserModule,
     WatchModule,
     WhatsappModule,
+    AuthModule, // ✅ Ensure AuthModule is included
   ],
-  providers: [OpenAIService, PineconeService], // Provide OpenAIService
-  controllers: [CommunicationController, AuthController],
+  providers: [OpenAIService, PineconeService],
+  controllers: [CommunicationController], // ✅ Remove AuthController if not needed
 })
 export class AppModule {}

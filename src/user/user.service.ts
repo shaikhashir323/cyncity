@@ -11,17 +11,26 @@ export class UserService {
     private userRepository: Repository<Users>,
   ) {}
 
-  async register(email: string, password: string): Promise<Users> {
+  async register(email: string, password: string): Promise<{ message: string; user?: Users }> {
+    // Check if user already exists
+    const existingUser = await this.findByEmail(email);
+    if (existingUser) {
+      return { message: 'User already registered' };
+    }
+  
     // Hash the password before storing
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-
+  
     const user = this.userRepository.create({ 
       email, 
       password: hashedPassword 
     });
-    return this.userRepository.save(user);
+    
+    await this.userRepository.save(user);
+    return { message: 'User registered successfully', user };
   }
+  
   
 
   async findByEmail(email: string): Promise<Users> {

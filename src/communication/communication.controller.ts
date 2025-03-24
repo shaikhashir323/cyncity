@@ -103,7 +103,7 @@ export class CommunicationController {
         console.log('AI Response:', aiResponse);
   
         // Send response back via WhatsApp
-        return this.whatsappService.sendMessage(senderId, 'generic_response', [aiResponse, '']);
+        return this.whatsappService.sendMessage(senderId, 'card_transaction_alert_2 ', [aiResponse, '']);
 
       }
     }

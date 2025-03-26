@@ -7,6 +7,6 @@ export interface HealthData {
   distance: number;
   restingHeartRate: number;
   floorsClimbed: number;
-  location?: string; // e.g., "City Park, near the main entrance"
-  activityStatus?: string; // e.g., "Resting", "Walking"
-}
+
+}''
+

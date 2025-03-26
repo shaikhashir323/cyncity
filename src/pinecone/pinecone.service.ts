@@ -2,7 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pinecone } from '@pinecone-database/pinecone';
 import OpenAI from 'openai';
-import { HealthData } from '../types/health-data'; // Import the shared type
+import { HealthData } from '../types/health-data';
+import { LocationData } from '../types/location-data';
 
 @Injectable()
 export class PineconeService {
@@ -15,14 +16,8 @@ export class PineconeService {
     const openAiApiKey = this.configService.get<string>('OPENAI_API_KEY');
     this.indexName = this.configService.get<string>('PINECONE_INDEX_NAME');
 
-    if (!pineconeApiKey) {
-      throw new Error('Missing PINECONE_API_KEY in environment variables');
-    }
-    if (!openAiApiKey) {
-      throw new Error('Missing OPENAI_API_KEY in environment variables');
-    }
-    if (!this.indexName) {
-      throw new Error('Missing PINECONE_INDEX_NAME in environment variables');
+    if (!pineconeApiKey || !openAiApiKey || !this.indexName) {
+      throw new Error('Missing required API keys or index name');
     }
 
     this.pinecone = new Pinecone({ apiKey: pineconeApiKey });
@@ -37,6 +32,27 @@ export class PineconeService {
     });
     return response.data[0].embedding;
   }
+  private locationIndexName = 'locations-index'; // or get from config
+
+  async initializeLocationIndex() {
+    const indexList = await this.pinecone.listIndexes();
+    const indexNames = indexList.indexes?.map(index => index.name) || [];
+  
+    if (!indexNames.includes(this.locationIndexName)) {
+      await this.pinecone.createIndex({
+        name: this.locationIndexName,
+        dimension: 2, // Only need 2 dimensions for lat/long
+        metric: "euclidean", // Better for geographic distances
+        spec: {
+          serverless: {
+            cloud: 'aws',
+            region: 'us-east-1'
+          }
+        }
+      });
+      console.log(`✅ Created location index: ${this.locationIndexName}`);
+    }
+  }
 
   async storeVector(id: string, text: string) {
     const index = this.pinecone.index(this.indexName);
@@ -49,10 +65,10 @@ export class PineconeService {
         metadata: { text, timestamp: new Date().toISOString() },
       },
     ]);
-    console.log(`✅ Stored vector for ID: ${id} with text: ${text}`);
+    console.log(`✅ Stored vector for ID: ${id}`);
   }
 
-  async querySimilarVectors(queryText: string, topK = 20): Promise<any[]> {
+  async querySimilarVectors(queryText: string, topK = 20) {
     const index = this.pinecone.index(this.indexName);
     const embedding = await this.generateEmbedding(queryText);
 
@@ -84,7 +100,7 @@ export class PineconeService {
         },
       },
     ]);
-    console.log(`✅ Stored health data for ID: ${vectorId}`, healthData);
+    console.log(`✅ Stored health data for ID: ${vectorId}`);
   }
 
   async getLatestHealthData(userId: string): Promise<HealthData | null> {
@@ -93,11 +109,53 @@ export class PineconeService {
     const vectorId = `health:${userId}`;
 
     const result = await namespace.fetch([vectorId]);
+
+    if (!result.records || !result.records[vectorId]) return null;
+
     const vector = result.records[vectorId];
 
     if (vector && vector.metadata?.healthData) {
-      const healthDataString = String(vector.metadata.healthData);
-      return JSON.parse(healthDataString) as HealthData;
+      try {
+        return JSON.parse(vector.metadata.healthData as string) as HealthData;
+      } catch (e) {
+        console.error('Error parsing health data:', e);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  async storeLocationData(userId: string, locationData: LocationData) {
+    await this.initializeLocationIndex(); // Ensure index exists
+    const index = this.pinecone.index(this.locationIndexName);
+    
+    await index.upsert([
+      {
+        id: `location:${userId}`,
+        values: [locationData.latitude, locationData.longitude],
+        metadata: {
+          location: locationData.location ?? "",
+          timestamp: new Date().toISOString(),
+        },
+      },
+    ]);
+    console.log(`✅ Stored location data for ID: ${userId}`);
+  }
+  
+  // Update getLatestLocationData similarly
+  async getLatestLocationData(userId: string): Promise<LocationData | null> {
+    const index = this.pinecone.index(this.locationIndexName);
+    const result = await index.fetch([`location:${userId}`]);
+  
+    if (!result.records || !result.records[`location:${userId}`]) return null;
+  
+    const vector = result.records[`location:${userId}`];
+    if (vector && vector.values.length === 2) {
+      return {
+        latitude: vector.values[0],
+        longitude: vector.values[1],
+        location: vector.metadata?.location ? String(vector.metadata.location) : undefined,
+      };
     }
     return null;
   }

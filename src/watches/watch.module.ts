@@ -8,5 +8,8 @@ import { WatchController } from './watch.controller';
   imports: [TypeOrmModule.forFeature([Watch])],
   controllers: [WatchController],
   providers: [WatchService],
+
 })
-export class WatchModule {}
+export class WatchModule {
+  
+}

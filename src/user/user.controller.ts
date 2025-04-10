@@ -1,45 +1,79 @@
 import { Controller, Post, Body, Get } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Users } from './user.entity';
-import { AuthService } from '../auth/auth.service'; // Import the AuthService
+import { AuthService } from '../auth/auth.service';
 
 @Controller('auth')
 export class UserController {
   constructor(
     private readonly userService: UserService,
-    private readonly authService: AuthService // Inject AuthService
+    private readonly authService: AuthService,
   ) {}
 
   @Post('register')
-  async register(@Body() body: { email: string; password: string }) {
-    return this.userService.register(body.email, body.password);
+  async register(
+    @Body() body: { email: string; password: string; phoneNumber?: string; watchIds?: number[] }, // Add optional watchIds
+  ) {
+    const { email, password, phoneNumber, watchIds = [] } = body; // Default to empty array if no watchIds
+    const result = await this.userService.register(email, password, phoneNumber, watchIds); // Pass watchIds to service
+
+    if (result.user) {
+      const token = this.authService.generateToken({ id: result.user.id, email: result.user.email });
+      return {
+        message: 'User registered successfully',
+        user: {
+          id: result.user.id,
+          email: result.user.email,
+          phoneNumber: result.user.phoneNumber,
+          isVerified: result.user.isVerified,
+          watches: result.user.watches || [], // Include linked patients in response
+        },
+        token,
+      };
+    }
+    return result;
   }
 
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
     const user = await this.userService.findByEmail(body.email);
-    
-    if (user && (await this.userService.validateUser(body.email, body.password))) {
-      // Generate JWT token
-      const token = this.authService.generateToken({ id: user.id, email: user.email });
 
-      return { 
-        message: 'Login successful', 
+    if (user && (await this.userService.validateUser(body.email, body.password))) {
+      const token = this.authService.generateToken({ id: user.id, email: user.email });
+      return {
+        message: 'Login successful',
         id: user.id,
         email: user.email,
-        token, // Return token
+        phoneNumber: user.phoneNumber,
+        watches: user.watches || [], // Include linked patients in response
+        token,
       };
     }
-    
     return { message: 'Invalid credentials' };
   }
 
   @Post('apple')
-  async appleSignIn(@Body() body: { appleUserId: string; email: string }) {
-    return this.userService.registerWithApple(body.appleUserId, body.email);
+  async appleSignIn(
+    @Body() body: { appleUserId: string; email: string; phoneNumber?: string; watchIds?: number[] }, // Add optional watchIds
+  ) {
+    const { appleUserId, email, phoneNumber, watchIds = [] } = body;
+    const result = await this.userService.registerWithApple(appleUserId, email, phoneNumber, watchIds); // Pass watchIds
+
+    if (result.user) {
+      const token = this.authService.generateToken({ id: result.user.id, email: result.user.email });
+      return {
+        ...result,
+        user: {
+          ...result.user,
+          token,
+          watches: result.user.watches || [], // Include linked patients
+        }
+      };
+    }
+    return result;
   }
 
-  @Get('users') // New endpoint to get all users
+  @Get('users')
   async getAllUsers(): Promise<Users[]> {
     return this.userService.findAll();
   }

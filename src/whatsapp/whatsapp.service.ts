@@ -22,17 +22,22 @@ export class WhatsappService {
     const payload = {
       messaging_product: 'whatsapp',
       to,
-      type: 'template',
-      template: {
-        name: templateName,
-        language: { code: 'en_US' },
-        components: [
-          {
-            type: 'body',
-            parameters: parameters.map(param => ({ type: 'text', text: param || '' })),
-          },
-        ],
+      type: 'text',
+      text: {
+        preview_url: true,
+        body: parameters[0],
       },
+      // type: 'template',
+      // template: {
+      //   name: templateName,
+      //   language: { code: 'en_US' },
+      //   components: [
+      //     {
+      //       type: 'body',
+      //       parameters: parameters.map(param => ({ type: 'text', text: param || '' })),
+      //     },
+      //   ],
+      // },
     };
 
     try {

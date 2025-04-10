@@ -5,10 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './user/user.module';
 import { WatchModule } from './watches/watch.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
-import { AuthModule } from './auth/auth.module'; // ✅ Import AuthModule
+import { AuthModule } from './auth/auth.module'; // Import AuthModule
 import { OpenAIService } from './openai/openai.service';
 import { CommunicationController } from './communication/communication.controller';
 import { PineconeService } from './pinecone/pinecone.service';
+import { UserService } from './user/user.service'; // Import UserService
+import { WatchService } from './watches/watch.service'; // Import WatchService
 
 @Module({
   imports: [
@@ -32,9 +34,10 @@ import { PineconeService } from './pinecone/pinecone.service';
     UserModule,
     WatchModule,
     WhatsappModule,
-    AuthModule, // ✅ Ensure AuthModule is included
+    AuthModule, // Ensure AuthModule is included
+    
   ],
-  providers: [OpenAIService, PineconeService],
-  controllers: [CommunicationController], // ✅ Remove AuthController if not needed
+  providers: [OpenAIService, PineconeService, UserService, WatchService],
+  controllers: [CommunicationController], // Remove AuthController if not needed
 })
 export class AppModule {}

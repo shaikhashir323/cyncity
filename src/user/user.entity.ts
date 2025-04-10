@@ -1,7 +1,7 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany } from 'typeorm';
 import { Watch } from 'src/watches/watch.entity';
 
-@Entity('users') // Ensure the table name is 'users'
+@Entity('users')
 export class Users {
   @PrimaryGeneratedColumn()
   id: number;
@@ -9,7 +9,7 @@ export class Users {
   @Column({ unique: true })
   email: string;
 
-  @Column({ nullable: true }) // Make password nullable
+  @Column({ nullable: true })
   password: string | null;
 
   @Column({ default: false })
@@ -18,6 +18,9 @@ export class Users {
   @Column({ type: 'text', nullable: true })
   verificationToken: string | null;
 
-  @OneToMany(() => Watch, (watch) => watch.user) // Establish the relationship
-  watches: Watch[]; // This will hold the references to the Watch entities
+  @Column({ unique: true, nullable: true }) // Make phoneNumber nullable
+  phoneNumber: string | null;
+
+  @ManyToMany(() => Watch, watch => watch.caregivers) // Many-to-many relation
+  watches: Watch[]; // Ab watches array hoga
 }

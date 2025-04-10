@@ -1,7 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToMany, JoinTable } from 'typeorm';
 import { Users } from 'src/user/user.entity';
 
-@Entity('watch') // Specify the table name as 'watch'
+@Entity('watch')
 export class Watch {
   @PrimaryGeneratedColumn()
   id: number;
@@ -13,11 +13,15 @@ export class Watch {
   brand: string;
 
   @Column()
-  username: string; // Add username field
+  username: string;
 
   @Column()
-  password: string; // Add password field
+  password: string;
 
-  @ManyToOne(() => Users, user => user.watches) // Establish the relationship
-  user: Users; // This will hold the reference to the User entity
+  @Column({ unique: true, nullable: true }) // Make phoneNumber nullable
+  phoneNumber: string | null;
+
+  @ManyToMany(() => Users, user => user.watches) // Many-to-many relation
+  @JoinTable() // Yeh watch_users table banayega
+  caregivers: Users[]; // Ab caregivers array hoga
 }

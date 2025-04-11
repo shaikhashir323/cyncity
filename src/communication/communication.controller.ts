@@ -43,36 +43,30 @@ export class CommunicationController {
     console.log(message, "message");
   
     if (message) {
-      const senderId = message.from.trim();
+      const senderId = message.from.trim(); // Caregiver's phone number
       const userQuery = typeof message.text?.body === 'string' ? message.text.body.trim() : '';
   
       if (userQuery) {
-        console.log(`Caregiver ${senderId} asked: ${userQuery}`);
+        console.log(`Sender ${senderId} asked: ${userQuery}`);
   
-        const caregiver = await this.userService.findByPhoneNumber(senderId);
-        if (!caregiver) {
-          return this.whatsappService.sendMessage(
-            senderId,
-            'text',
-            ['Your phone number is not registered. Please contact support to register.']
-          );
-        }
+        // Find all watches where senderId is a caregiver
+        const allWatches = await this.watchService.findAll();
+        const associatedPatients = allWatches.filter(watch => 
+          watch.caregiverPhoneNumbers?.includes(senderId)
+        );
   
-        const associatedPatients = caregiver.watches || [];
-        console.log('Caregivers', caregiver);
         if (!associatedPatients.length) {
           return this.whatsappService.sendMessage(
             senderId,
             'text',
-            ['No patients are linked to your account. Please contact support to associate patients.']
+            ['You are not linked to any patients as a caregiver. Please contact support to associate patients.']
           );
         }
   
         const latestVector = await this.pineconeService.querySimilarVectors(`chat:${senderId}`, 1);
         let selectedPatientId = latestVector[0]?.metadata?.selectedPatientId;
-        let selectedPatient;
+        let selectedPatient: Watch | undefined;
   
-        // Check if the query contains a patient name or a switch command
         const queryLower = userQuery.toLowerCase();
   
         // Look for patient name in the query (e.g., "Ali ka health")
@@ -83,10 +77,8 @@ export class CommunicationController {
           // Check for explicit switch commands (e.g., "select Ali" or "switch to patient 2")
           if (queryLower.startsWith('select ') || queryLower.startsWith('switch to ')) {
             const patientIdentifier = queryLower.replace('select ', '').replace('switch to ', '').trim();
-            // Try matching by name
             selectedPatient = associatedPatients.find(p => p.name.toLowerCase() === patientIdentifier);
             if (!selectedPatient) {
-              // Try matching by number (e.g., "switch to patient 2")
               const match = patientIdentifier.match(/patient (\d+)/);
               if (match) {
                 const patientIndex = parseInt(match[1], 10) - 1;
@@ -105,13 +97,11 @@ export class CommunicationController {
           }
         }
   
-        // If no patient selected yet, prompt for selection
         if (!selectedPatientId) {
           const patientListMessage = this.buildPatientSelectionMessage(associatedPatients);
           return this.whatsappService.sendMessage(senderId, 'text', [patientListMessage]);
         }
   
-        // Handle numeric selection (e.g., "1" for Rashid)
         if (/^\d+$/.test(userQuery)) {
           const patientIndex = parseInt(userQuery, 10) - 1;
           if (patientIndex >= 0 && patientIndex < associatedPatients.length) {
@@ -129,7 +119,6 @@ export class CommunicationController {
           );
         }
   
-        // Store the updated patient selection
         const vectorId = `chat:${senderId}:${new Date().toISOString()}`;
         await this.pineconeService.storeVector(vectorId, userQuery, {
           selectedPatientId: selectedPatient.id,
@@ -138,13 +127,13 @@ export class CommunicationController {
         });
   
         const [healthData, locationData] = await Promise.all([
-          this.pineconeService.getLatestHealthData(selectedPatient.phoneNumber),
-          this.pineconeService.getLatestLocationData(selectedPatient.phoneNumber),
+          this.pineconeService.getLatestHealthData(selectedPatient.id),
+          this.pineconeService.getLatestLocationData(selectedPatient.id),
         ]);
   
         const healthDataString = this.formatHealthData(selectedPatient.name, healthData);
         const locationString = this.formatLocationData(locationData);
-        const relationshipContext = `You are assisting ${caregiver.email || senderId}, a caregiver of ${selectedPatient.name}, the patient with the device.`;
+        const relationshipContext = `You are assisting ${senderId}, a caregiver of ${selectedPatient.name}, the patient with the device.`;
   
         const chatHistory = await this.pineconeService.querySimilarVectors(`chat:${senderId}`, 20);
         const senderHistory = chatHistory
@@ -175,6 +164,7 @@ export class CommunicationController {
   
     return { status: 'received' };
   }
+
   private buildPatientSelectionMessage(patients: Watch[]): string {
     let message = 'Please select a patient by typing the corresponding number:\n';
     patients.forEach((patient, index) => {
@@ -254,49 +244,48 @@ AI:
   }
 
   @Post('store-health-data')
-  async storeHealthData(@Body() body: { userId: string; healthData: HealthData }) {
-    const { userId, healthData } = body;
-    await this.pineconeService.storeHealthData(userId, healthData);
-    return { status: 'success', message: `Health data stored for patient ${userId}` };
+  async storeHealthData(@Body() body: { watchId: number; healthData: HealthData }) {
+    const { watchId, healthData } = body;
+    await this.pineconeService.storeHealthData(watchId, healthData);
+    return { status: 'success', message: `Health data stored for watch ${watchId}` };
   }
 
   @Get('get-health-data')
-  async getHealthData(@Query('userId') userId: string) {
-    const healthData = await this.pineconeService.getLatestHealthData(userId);
-    return healthData ? { status: 'success', data: healthData } : { status: 'not_found', message: `No health data found for patient ${userId}` };
+  async getHealthData(@Query('watchId') watchId: number) {
+    const healthData = await this.pineconeService.getLatestHealthData(watchId);
+    return healthData ? { status: 'success', data: healthData } : { status: 'not_found', message: `No health data found for watch ${watchId}` };
   }
 
   @Post('store-location-data')
-  async storeLocationData(@Body() body: { userId: string; locationData: LocationData }) {
-    const { userId, locationData } = body;
-    await this.pineconeService.storeLocationData(userId, locationData);
-    return { status: 'success', message: `Location data stored for patient ${userId}` };
+  async storeLocationData(@Body() body: { watchId: number; locationData: LocationData }) {
+    const { watchId, locationData } = body;
+    await this.pineconeService.storeLocationData(watchId, locationData);
+    return { status: 'success', message: `Location data stored for watch ${watchId}` };
   }
 
-  @Get('latest-location-data/:userId')
-  async getLatestLocationData(@Param('userId') userId: string) {
-    const data = await this.pineconeService.getLatestLocationData(userId);
+  @Get('latest-location-data/:watchId')
+  async getLatestLocationData(@Param('watchId') watchId: number) {
+    const data = await this.pineconeService.getLatestLocationData(watchId);
     return data ? { status: 'success', data } : { status: 'error', message: 'No data found' };
   }
 
+  @Post('generate-response')
+  async generateResponse(@Body('prompt') prompt: string) {
+    return this.openaiService.generateResponse(prompt);
+  }
 
-@Post('generate-response')
-async generateResponse(@Body('prompt') prompt: string) {
-  return this.openaiService.generateResponse(prompt);
-}
+  @Post('generate-embedding')
+  async generateEmbedding(@Body('text') text: string) {
+    return this.pineconeService.generateEmbedding(text);
+  }
 
-@Post('generate-embedding')
-async generateEmbedding(@Body('text') text: string) {
-  return this.pineconeService.generateEmbedding(text);
-}
+  @Post('store-vector')
+  async storeVector(@Body() body: { id: string; text: string }) {
+    return this.pineconeService.storeVector(body.id, body.text);
+  }
 
-@Post('store-vector')
-async storeVector(@Body() body: { id: string; text: string }) {
-  return this.pineconeService.storeVector(body.id, body.text);
-}
-
-@Post('query-vectors')
-async queryVectors(@Body('queryText') queryText: string) {
-  return this.pineconeService.querySimilarVectors(queryText);
-}
+  @Post('query-vectors')
+  async queryVectors(@Body('queryText') queryText: string) {
+    return this.pineconeService.querySimilarVectors(queryText);
+  }
 }

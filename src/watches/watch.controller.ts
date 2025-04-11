@@ -7,24 +7,38 @@ export class WatchController {
 
   @Post('register')
   async register(
-    @Body() body: { name: string; brand: string; username: string; password: string; phoneNumber: string; caregiverIds: number[] }
+    @Body() body: {
+      name: string;
+      brand: string;
+      username: string;
+      password: string;
+      phoneNumber: string;
+      caregiverPhoneNumbers?: string[]; // Accept array in the request
+    },
   ) {
-    return this.watchService.register(body.name, body.brand, body.username, body.password, body.phoneNumber, body.caregiverIds);
+    const caregiversAsString = body.caregiverPhoneNumbers
+      ? body.caregiverPhoneNumbers.join(',') // ✅ convert to string
+      : '';
+
+    return this.watchService.register(
+      body.name,
+      body.brand,
+      body.username,
+      body.password,
+      body.phoneNumber,
+      caregiversAsString // ✅ send as string
+    );
   }
 
+
   @Post('login')
-  async login(@Body() body: { username: string; password: string; caregiverEmails?: string[] }) {
-    const result = await this.watchService.login(
-      body.username, 
-      body.password, 
-      body.caregiverEmails
-    );
-    
+  async login(@Body() body: { username: string; password: string }) {
+    const result = await this.watchService.login(body.username, body.password);
     if (result) {
       return { 
         message: 'Login successful', 
         watch: result.watch, 
-        caregiverIds: result.caregiverIds 
+        caregiverPhoneNumbers: result.caregiverPhoneNumbers 
       };
     }
     return { message: 'Invalid credentials' };
@@ -35,13 +49,8 @@ export class WatchController {
     return this.watchService.findAll();
   }
 
-  @Post('add-caregivers')
-  async addCaregivers(@Body() body: { watchId: number; caregiverIds: number[] }) {
-    return this.watchService.addCaregivers(body.watchId, body.caregiverIds);
-  }
-  
-  @Post('add-caregivers-by-email')
-  async addCaregiversByEmail(@Body() body: { watchId: number; caregiverEmails: string }) {
-    return this.watchService.addCaregiversByEmail(body.watchId, body.caregiverEmails);
+  @Post('add-caregivers-by-phone')
+  async addCaregiversByPhoneNumber(@Body() body: { watchId: number; caregiverPhoneNumbers: string }) {
+    return this.watchService.addCaregiversByPhoneNumber(body.watchId, body.caregiverPhoneNumbers);
   }
 }

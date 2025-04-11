@@ -87,17 +87,17 @@ export class PineconeService {
     return result.matches;
   }
 
-  async storeHealthData(phoneNumber: string, healthData: HealthData) {
+  async storeHealthData(watchId: number, healthData: HealthData) {
     const index = this.pinecone.index(this.indexName);
     const namespace = index.namespace('health');
 
-    const watch = await this.watchService.getWatchByPhoneNumber(phoneNumber);
+    const watch = await this.watchService.getWatchById(watchId);
     if (!watch) {
-      console.error(`No watch found for phoneNumber: ${phoneNumber}`);
+      console.error(`No watch found for watchId: ${watchId}`);
       return;
     }
 
-    const vectorId = `health:${watch.id}`;
+    const vectorId = `health:${watchId}`;
     const healthDataString = JSON.stringify(healthData);
     const embedding = await this.generateEmbedding(healthDataString);
 
@@ -114,17 +114,17 @@ export class PineconeService {
     console.log(`✅ Stored health data for ID: ${vectorId}`);
   }
 
-  async getLatestHealthData(phoneNumber: string): Promise<HealthData | null> {
+  async getLatestHealthData(watchId: number): Promise<HealthData | null> {
     const index = this.pinecone.index(this.indexName);
     const namespace = index.namespace('health');
 
-    const watch = await this.watchService.getWatchByPhoneNumber(phoneNumber);
+    const watch = await this.watchService.getWatchById(watchId);
     if (!watch) {
-      console.error(`No watch found for phoneNumber: ${phoneNumber}`);
+      console.error(`No watch found for watchId: ${watchId}`);
       return null;
     }
 
-    const vectorId = `health:${watch.id}`;
+    const vectorId = `health:${watchId}`;
     const result = await namespace.fetch([vectorId]);
     const vector = result.records?.[vectorId];
 
@@ -139,19 +139,19 @@ export class PineconeService {
     return null;
   }
 
-  async storeLocationData(phoneNumber: string, locationData: LocationData) {
+  async storeLocationData(watchId: number, locationData: LocationData) {
     await this.initializeLocationIndex();
     const index = this.pinecone.index(this.locationIndexName);
 
-    const watch = await this.watchService.getWatchByPhoneNumber(phoneNumber);
+    const watch = await this.watchService.getWatchById(watchId);
     if (!watch) {
-      console.error(`No watch found for phoneNumber: ${phoneNumber}`);
+      console.error(`No watch found for watchId: ${watchId}`);
       return;
     }
 
     await index.upsert([
       {
-        id: `location:${watch.id}`,
+        id: `location:${watchId}`,
         values: [locationData.latitude, locationData.longitude],
         metadata: {
           location: locationData.location ?? '',
@@ -159,20 +159,20 @@ export class PineconeService {
         },
       },
     ]);
-    console.log(`✅ Stored location data for ID: ${watch.id}`);
+    console.log(`✅ Stored location data for ID: ${watchId}`);
   }
 
-  async getLatestLocationData(phoneNumber: string): Promise<LocationData | null> {
+  async getLatestLocationData(watchId: number): Promise<LocationData | null> {
     const index = this.pinecone.index(this.locationIndexName);
 
-    const watch = await this.watchService.getWatchByPhoneNumber(phoneNumber);
+    const watch = await this.watchService.getWatchById(watchId);
     if (!watch) {
-      console.error(`No watch found for phoneNumber: ${phoneNumber}`);
+      console.error(`No watch found for watchId: ${watchId}`);
       return null;
     }
 
-    const result = await index.fetch([`location:${watch.id}`]);
-    const vector = result.records?.[`location:${watch.id}`];
+    const result = await index.fetch([`location:${watchId}`]);
+    const vector = result.records?.[`location:${watchId}`];
 
     if (vector && vector.values.length === 2) {
       return {

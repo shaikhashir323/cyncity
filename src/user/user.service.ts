@@ -12,20 +12,17 @@ export class UserService {
     private userRepository: Repository<Users>,
     @InjectRepository(Watch)
     private watchRepository: Repository<Watch>,
-  ) { }
+  ) {}
 
   async register(
     email: string,
     password: string,
-    phoneNumber?: string,
+    phoneNumber?: string, // Keep optional but not used for uniqueness
     watchIds: number[] = []
   ): Promise<{ message: string; user?: Users }> {
-    // Check for existing user by email or phone number
+    // Check for existing user by email only
     const existingUser = await this.userRepository.findOne({
-      where: [
-        { email },
-        { phoneNumber: phoneNumber || undefined }
-      ]
+      where: { email },
     });
 
     if (existingUser) {
@@ -33,17 +30,13 @@ export class UserService {
     }
 
     // Validate watch IDs if provided
-    console.log(watchIds);
     let watches: Watch[] = [];
-
     if (watchIds && watchIds.length > 0) {
       for (const id of watchIds) {
         const watch = await this.watchRepository.findOne({ where: { id } });
-
         if (!watch) {
           throw new NotFoundException(`Watch with ID ${id} is invalid or not found`);
         }
-
         watches.push(watch);
       }
     }
@@ -56,56 +49,47 @@ export class UserService {
     const user = this.userRepository.create({
       email,
       password: hashedPassword,
-      phoneNumber,
-      watches: watches, // Directly assign validated watches
+      phoneNumber, // Store if provided, but not required or checked
+      watches,
     });
 
     // Save user
     await this.userRepository.save(user);
 
-    // Retrieve and return full user with relations
     return {
       message: 'User registered successfully',
-      user: await this.findById(user.id)
+      user: await this.findById(user.id),
     };
   }
 
   async registerWithApple(
     appleUserId: string,
     email: string,
-    phoneNumber?: string,
+    phoneNumber?: string, // Optional, not required
     watchIds: number[] = []
   ): Promise<{ message: string; user: Partial<Users> }> {
-    // Check for existing user
     let user = await this.userRepository.findOne({
       where: { email },
-      relations: ['watches']
+      relations: ['watches'],
     });
 
-    // Validate watch IDs if provided
     let watches: Watch[] = [];
     if (watchIds && watchIds.length > 0) {
       watches = await this.watchRepository.findByIds(watchIds);
-
       if (watches.length !== watchIds.length) {
         throw new NotFoundException('One or more watch IDs are invalid');
       }
     }
 
     if (user) {
-      // Update phone number if not set
       if (phoneNumber && !user.phoneNumber) {
         user.phoneNumber = phoneNumber;
-
-        // Add new watches if not already associated
         const newWatches = watches.filter(
           watch => !user.watches.some(existingWatch => existingWatch.id === watch.id)
         );
         user.watches.push(...newWatches);
-
         await this.userRepository.save(user);
       }
-
       return {
         message: 'User logged in successfully with Apple.',
         user: {
@@ -118,13 +102,12 @@ export class UserService {
       };
     }
 
-    // Create new user
     user = this.userRepository.create({
       email,
-      phoneNumber,
+      phoneNumber, // Optional, not required
       isVerified: true,
       password: null,
-      watches: watches,
+      watches,
     });
 
     await this.userRepository.save(user);
@@ -144,21 +127,21 @@ export class UserService {
   async findByEmail(email: string): Promise<Users | null> {
     return this.userRepository.findOne({
       where: { email },
-      relations: ['watches']
+      relations: ['watches'],
     });
   }
 
   async findByPhoneNumber(phoneNumber: string): Promise<Users | null> {
     return this.userRepository.findOne({
       where: { phoneNumber },
-      relations: ['watches']
+      relations: ['watches'],
     });
   }
 
   async findById(id: number): Promise<Users | null> {
     return this.userRepository.findOne({
       where: { id },
-      relations: ['watches']
+      relations: ['watches'],
     });
   }
 

@@ -18,10 +18,13 @@ export class Watch {
   @Column()
   password: string;
 
-  @Column({ unique: true, nullable: true }) // Make phoneNumber nullable
+  @Column({ unique: true, nullable: true })
   phoneNumber: string | null;
 
-  @ManyToMany(() => Users, user => user.watches) // Many-to-many relation
-  @JoinTable() // Yeh watch_users table banayega
-  caregivers: Users[]; // Ab caregivers array hoga
+  @Column({ type: 'text', nullable: true }) // ✅ Store as comma-separated string
+  caregiverPhoneNumbers: string | null;
+
+  @ManyToMany(() => Users, user => user.watches)
+  @JoinTable()
+  caregivers: Users[];
 }

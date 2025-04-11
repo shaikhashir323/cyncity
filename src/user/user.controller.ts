@@ -12,10 +12,10 @@ export class UserController {
 
   @Post('register')
   async register(
-    @Body() body: { email: string; password: string; phoneNumber?: string; watchIds?: number[] }, // Add optional watchIds
+    @Body() body: { email: string; password: string; phoneNumber?: string; watchIds?: number[] }
   ) {
-    const { email, password, phoneNumber, watchIds = [] } = body; // Default to empty array if no watchIds
-    const result = await this.userService.register(email, password, phoneNumber, watchIds); // Pass watchIds to service
+    const { email, password, phoneNumber, watchIds = [] } = body;
+    const result = await this.userService.register(email, password, phoneNumber, watchIds);
 
     if (result.user) {
       const token = this.authService.generateToken({ id: result.user.id, email: result.user.email });
@@ -26,7 +26,7 @@ export class UserController {
           email: result.user.email,
           phoneNumber: result.user.phoneNumber,
           isVerified: result.user.isVerified,
-          watches: result.user.watches || [], // Include linked patients in response
+          watches: result.user.watches || [],
         },
         token,
       };
@@ -45,7 +45,7 @@ export class UserController {
         id: user.id,
         email: user.email,
         phoneNumber: user.phoneNumber,
-        watches: user.watches || [], // Include linked patients in response
+        watches: user.watches || [],
         token,
       };
     }
@@ -54,10 +54,10 @@ export class UserController {
 
   @Post('apple')
   async appleSignIn(
-    @Body() body: { appleUserId: string; email: string; phoneNumber?: string; watchIds?: number[] }, // Add optional watchIds
+    @Body() body: { appleUserId: string; email: string; phoneNumber?: string; watchIds?: number[] }
   ) {
     const { appleUserId, email, phoneNumber, watchIds = [] } = body;
-    const result = await this.userService.registerWithApple(appleUserId, email, phoneNumber, watchIds); // Pass watchIds
+    const result = await this.userService.registerWithApple(appleUserId, email, phoneNumber, watchIds);
 
     if (result.user) {
       const token = this.authService.generateToken({ id: result.user.id, email: result.user.email });
@@ -66,8 +66,8 @@ export class UserController {
         user: {
           ...result.user,
           token,
-          watches: result.user.watches || [], // Include linked patients
-        }
+          watches: result.user.watches || [],
+        },
       };
     }
     return result;
